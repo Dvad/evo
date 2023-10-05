@@ -111,7 +111,8 @@ def get_delta_unit(args: argparse.Namespace) -> Unit:
 
 def plot_result(args: argparse.Namespace, result: Result, traj_ref: PosePath3D,
                 traj_est: PosePath3D,
-                traj_ref_full: typing.Optional[PosePath3D] = None) -> None:
+                traj_ref_full: typing.Optional[PosePath3D] = None,
+                traj_est_full: typing.Optional[PosePath3D] = None) -> None:
     from evo.tools import plot
     from evo.tools.settings import SETTINGS
 
@@ -155,6 +156,13 @@ def plot_result(args: argparse.Namespace, result: Result, traj_ref: PosePath3D,
               color=SETTINGS.plot_reference_color, label='reference',
               alpha=SETTINGS.plot_reference_alpha,
               plot_start_end_markers=SETTINGS.plot_start_end_markers)
+    if traj_est_full is not None:
+        # align with result
+        transform = result.np_arrays["alignment_transformation_sim3"]
+        if transform is not None:
+            traj_est_full.transform(transform)
+        plot.traj(ax, plot_mode, traj_est_full)
+
     plot.draw_coordinate_axes(ax, traj_ref, plot_mode,
                               SETTINGS.plot_reference_axis_marker_scale)
 

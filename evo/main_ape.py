@@ -118,7 +118,8 @@ def run(args: argparse.Namespace) -> None:
     if args.plot_full_ref:
         import copy
         traj_ref_full = copy.deepcopy(traj_ref)
-
+    import copy
+    traj_est_synchronized = copy.deepcopy(traj_est)
     if isinstance(traj_ref, PoseTrajectory3D) and isinstance(
             traj_est, PoseTrajectory3D):
         logger.debug(SEP)
@@ -129,14 +130,14 @@ def run(args: argparse.Namespace) -> None:
                 logger.info("Using time range end: {}s".format(args.t_end))
             traj_ref.reduce_to_time_range(args.t_start, args.t_end)
         logger.debug("Synchronizing trajectories...")
-        traj_ref, traj_est = sync.associate_trajectories(
+        traj_ref, traj_est_synchronized = sync.associate_trajectories(
             traj_ref, traj_est, args.t_max_diff, args.t_offset,
             first_name=ref_name, snd_name=est_name)
 
     pose_relation = common.get_pose_relation(args)
     change_unit = metrics.Unit(args.change_unit) if args.change_unit else None
 
-    result = ape(traj_ref=traj_ref, traj_est=traj_est,
+    result = ape(traj_ref=traj_ref, traj_est=traj_est_synchronized,
                  pose_relation=pose_relation, align=args.align,
                  correct_scale=args.correct_scale, n_to_align=args.n_to_align,
                  align_origin=args.align_origin, ref_name=ref_name,
@@ -145,7 +146,8 @@ def run(args: argparse.Namespace) -> None:
     if args.plot or args.save_plot or args.serialize_plot:
         common.plot_result(args, result, traj_ref,
                            result.trajectories[est_name],
-                           traj_ref_full=traj_ref_full)
+                           traj_ref_full=traj_ref_full,
+                           traj_est_full=traj_est)
 
     if args.save_results:
         logger.debug(SEP)

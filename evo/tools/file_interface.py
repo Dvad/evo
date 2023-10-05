@@ -27,6 +27,11 @@ import logging
 import os
 import typing
 import zipfile
+import fsspec
+
+# manifold support
+from manifold_fsspec.manifold_fsspec_impl import ManifoldFileSystem
+fsspec.register_implementation("manifold", ManifoldFileSystem)
 
 import numpy as np
 from rosbags.rosbag1 import (Reader as Rosbag1Reader, Writer as Rosbag1Writer)
@@ -59,10 +64,11 @@ def has_utf8_bom(file_path):
     Checks if the given file starts with a UTF8 BOM
     wikipedia.org/wiki/Byte_order_mark
     """
-    size_bytes = os.path.getsize(file_path)
-    if size_bytes < 3:
-        return False
-    with open(file_path, 'rb') as f:
+    # f = fsspec.open(file_path, "r")
+    # size_bytes = f.size()
+    # if size_bytes < 3:
+    #     return False
+    with fsspec.open(file_path, 'rb').open() as f:
         return not int(binascii.hexlify(f.read(3)), 16) ^ 0xEFBBBF
 
 
@@ -80,11 +86,8 @@ def csv_read_matrix(file_path, delim=',', comment_str="#"):
         reader = csv.reader(generator, delimiter=delim)
         mat = [row for row in reader]
     else:
-        if not os.path.isfile(file_path):
-            raise FileInterfaceException("csv file " + str(file_path) +
-                                         " does not exist")
         skip_3_bytes = has_utf8_bom(file_path)
-        with open(file_path) as f:
+        with fsspec.open(file_path, "r").open() as f:
             if skip_3_bytes:
                 f.seek(3)
             generator = (line for line in f
@@ -475,7 +478,7 @@ def load_transform_json(json_path) -> np.ndarray:
     if hasattr(json_path, "read"):
         data = json.load(json_path)
     else:
-        with open(json_path, 'r') as tf_file:
+        with fsspec.open(json_path, 'r').open() as tf_file:
             data = json.load(tf_file)
     keys = ("x", "y", "z", "qx", "qy", "qz", "qw")
     if not all(key in data for key in keys):
@@ -499,7 +502,7 @@ def load_transform(file_path) -> np.ndarray:
     if os.path.getsize(file_path) < np.lib.format.MAGIC_LEN:
         raise FileInterfaceException(f"Cannot determine type of {file_path}")
 
-    with open(file_path, "rb") as file_handle:
+    with fsspec.open(file_path, "rb").open() as file_handle:
         header = file_handle.read(np.lib.format.MAGIC_LEN)
         if header.startswith(np.lib.format.MAGIC_PREFIX):
             matrix = np.load(file_path)
