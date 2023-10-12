@@ -213,7 +213,7 @@ class PosePath3D(object):
         if not correct_only_scale:
             logger.debug("Rotation of alignment:\n{}"
                          "\nTranslation of alignment:\n{}".format(r_a, t_a))
-        logger.debug("Scale correction: {}".format(s))
+        logger.info("Scale correction: {}".format(s))
 
         if correct_only_scale:
             self.scale(s)
